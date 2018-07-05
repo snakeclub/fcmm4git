@@ -7,8 +7,11 @@ FCMM针对Git的命令处理
 @file fcmm_git_cmd.py
 """
 
+import os
 import json
 import logging
+import subprocess
+from git import Repo
 from snakerlib.generic import ExceptionTools, RunTools, FileTools
 
 
@@ -39,8 +42,9 @@ class FcmmGitCmd(object):
         back_str = ''
         # 通过switch字典实现switch的代码
         switch = {
-            'init': FcmmGitCmd.cmd_init,
-            'help': FcmmGitCmd.cmd_help
+            'cd': FcmmGitCmd.cmd_cd,
+            'help': FcmmGitCmd.cmd_help,
+            'init': FcmmGitCmd.cmd_init
         }
         with ExceptionTools.ignored_all((), logging, '执行"%s %s"出现异常' % (cmd, cmd_para)):
             dict_cmd_para = FcmmGitCmd.split_cmd_para(cmd_para)
@@ -85,9 +89,53 @@ class FcmmGitCmd(object):
         # 返回
         return dict_cmd_para
 
+    @staticmethod
+    def get_repo_info():
+        """
+        从当前目录获取repo的信息
+
+        @decorators staticmethod
+
+        @returns {dict} - 返回repo信息字典，格式为
+            {
+                'work_dir': '当前工作目录',
+                'repo': 'repo对象'
+            }
+        """
+        repo_info = dict()
+        repo_info['work_dir'] = os.getcwd()
+        try:
+            repo_info['repo'] = Repo(repo_info['work_dir'])
+        except Exception as e:
+            # 忽略异常，通过repo_info['repo']是否为None来进行后续处理
+            repo_info['repo'] = None
+
+        return repo_info
+
     #############################
     # 具体命令处理函数
     #############################
+
+    @staticmethod
+    def cmd_cd(dict_cmd_para=None):
+        """
+        切换目录命令，为了适应cd命令无效的问题
+
+        @decorators staticmethod
+
+        @param {dict} dict_cmd_para=None - 参数字典
+
+        @returns {string} - 返回处理显示内容
+        """
+        if len(dict_cmd_para) == 0:
+            # 没有传入参数，直接执行CD命令即可
+            subprocess.run('cd', shell=True)
+            return ''
+        else:
+            # 带参数，修改路径
+            os.chdir(sorted(dict_cmd_para.keys())[0])
+            subprocess.run('cd', shell=True)
+            return ''
 
     @staticmethod
     def cmd_help(dict_cmd_para=None):
@@ -119,7 +167,8 @@ class FcmmGitCmd(object):
 
         @returns {string} - 返回处理显示内容
         """
-        return ''
+        repo_info = FcmmGitCmd.get_repo_info()
+        return repo_info['work_dir']
 
 
 if __name__ == '__main__':

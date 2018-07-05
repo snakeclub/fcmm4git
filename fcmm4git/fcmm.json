@@ -6,6 +6,9 @@
         "help": {
             "deal_fun": ""
         },
+        "cd": {
+            "deal_fun": ""
+        },
         "init": {
             "deal_fun": "",
             "long_para": {
