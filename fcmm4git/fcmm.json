@@ -1,0 +1,52 @@
+{
+    "consle_encode": "GBK",
+    "temp_path": "temp/",
+    "tips": "\n    FCMM命令处理工具v0.1.0 by 黎慧剑  :  输入过程中可通过Ctrl+C取消输入，通过Ctrl+D退出命令行处理服务;  查看全部命令请执行help。\n",
+    "cmd_para": {
+        "help": {
+            "deal_fun": ""
+        },
+        "init": {
+            "deal_fun": "",
+            "long_para": {
+                "help": [],
+                "base": [
+                    "local",
+                    "remote"
+                ],
+                "force": [],
+                "url": [],
+                "version": [],
+                "nopkg": [],
+                "h": [],
+                "b": [
+                    "local",
+                    "remote"
+                ],
+                "f": [],
+                "u": [],
+                "v": [],
+                "n": []
+            }
+        },
+        "add-pkg": {
+            "deal_fun": "",
+            "long_para": {
+                "help": [],
+                "base": [
+                    "local",
+                    "remote"
+                ],
+                "version": [],
+                "force": [],
+                "h": [],
+                "b": [],
+                "v": [],
+                "f": []
+            }
+        }
+    },
+    "help_text": {
+        "all": "全部提示"
+    }
+}
