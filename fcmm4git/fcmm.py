@@ -12,6 +12,7 @@ import json
 import sys
 import copy
 import logging
+import git
 from snakerlib.prompt_plus import PromptPlus
 from snakerlib.generic import FileTools, ExceptionTools, StringTools, RunTools
 from fcmm_git_cmd import FcmmGitCmd
@@ -86,6 +87,12 @@ def fcmm_init():
         FileTools.create_dir(config['temp_path'])
         RunTools.set_global_var('temp_path', config['temp_path'])
 
+    # 创建备份目录
+    if config['backup_before'] != 'false':
+        with ExceptionTools.ignored((FileExistsError)):
+            FileTools.create_dir(config['backup_path'])
+            RunTools.set_global_var('backup_path', config['backup_path'])
+
     # 初始化命令行参数
     config_cmd_para = cmd_para_init(config)
     RunTools.set_global_var('config_cmd_para', config_cmd_para)
@@ -115,6 +122,14 @@ if __name__ == '__main__':
     # 当程序自己独立运行时执行的操作
     # 初始化命令行并启动
     fcmm_init()
+    """
+    repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git')
+    print(repo.branches[0].name)
+    print(repo.branches[0].commit)
+    print(repo.remotes[0].name)
+    print(repo.remotes[0].url)
+    """
+
     """
     res = subprocess.run('hahha', shell=True)
     print('returncode:%s\n%s\n%s' % (res.returncode, res.stdout, res.stderr))

@@ -1,6 +1,8 @@
 {
     "consle_encode": "GBK",
     "temp_path": "temp/",
+    "backup_before": "true",
+    "backup_path": "backup/",
     "tips": "\n    FCMM命令处理工具v0.1.0 by 黎慧剑  :  输入过程中可通过Ctrl+C取消输入，通过Ctrl+D退出命令行处理服务;  查看全部命令请执行help。\n",
     "cmd_para": {
         "help": {
@@ -50,6 +52,17 @@
         }
     },
     "help_text": {
-        "all": "全部提示"
+        "all": "FCMM4Git支持的命令如下：\n  help - 获取命令帮助\n  init - 根据指定的参数建立及初始化FCMM版本库",
+        "help": "说明：获取命令帮助信息\n外部命令：fcmm help [命令]\n内部命令：init [命令]",
+        "init": "初始化FCMM版本库（init）\n说明：根据指定的参数建立及初始化FCMM版本库\n外部命令：fcmm init [参数……]\n内部命令：init [参数……]\n参数定义（有长参数和短参数两种形式）：\n    -help / -h : 获取命令帮助信息\n    -base / -b : 参数值local/remote，指定初始化的原始版本基于本地还是远程，无论基于本地还是远程，都会判断另一端是否有版本或文件的存在，如果有则报错不处理\n    -force / -f ：指定是否强制初始化，如果指定强制初始化，另一端的文件和版本会被清除覆盖掉，因此force参数要慎用\n    -url / -u : 指定远程git服务的url，例如'https://github.com/snakeclub/fcmm4git.git'\n    -version / -v : 指定当前版本库的版本，例如'v1.0.1'或'd20180620-1'\n    -nopkg / -n : 指定不建立lb-pkg分支，不指定该参数则会建立该分支"
+    },
+    "i18n_tips": {
+        "execute_success": "命令执行成功",
+        "execute_fail": "命令执行失败",
+        "must_has_para": "必须包括参数'%s'",
+        "exit_fcmm_file": "该版本库已装载fcmm4git，不能重新初始化，如需重新初始化请删除'.fcmm4git'文件",
+        "remote_not_bare": "远程版本库非空，如果需要强制处理请使用'-force' 或 '-f'参数.",
+        "local_not_bare": "本地目录非空，如果需要强制处理请使用'-force' 或 '-f'参数.",
+        "remote_backup_fail": "远程仓库备份失败！"
     }
 }
