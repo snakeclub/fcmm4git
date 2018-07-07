@@ -122,8 +122,13 @@ if __name__ == '__main__':
     # 当程序自己独立运行时执行的操作
     # 初始化命令行并启动
     fcmm_init()
+
     """
-    repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git')
+    # repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git')
+    repo = git.Repo(r'D:/dev/github/fcmm4git/test/temptest/init/fcmm4git-unittest')
+    print(repo.tags[0].name)
+    print(type(repo.tags[0].commit))
+    print(str(repo.tags[0].commit))
     print(repo.branches[0].name)
     print(repo.branches[0].commit)
     print(repo.remotes[0].name)

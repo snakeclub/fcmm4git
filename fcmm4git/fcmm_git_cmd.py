@@ -147,10 +147,10 @@ class FcmmGitCmd(object):
         remote_repo_name = url
         _index = url.rfind('/')
         if _index >= 0:
-            remote_repo_name = url[_index + 1:]
-        _index = remote_repo_name.find('.')
+            remote_repo_name = remote_repo_name[_index + 1:]
+        _index = remote_repo_name.rfind('.')
         if _index >= 0:
-            remote_repo_name = url[0: _index]
+            remote_repo_name = remote_repo_name[0: _index]
         return remote_repo_name
 
     @staticmethod
