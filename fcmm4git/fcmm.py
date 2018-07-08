@@ -8,9 +8,12 @@ FCMM模型的GIT命令行工具，提高版本管理执行效率
 """
 
 import subprocess
+import inspect
 import json
 import sys
+import os
 import copy
+import traceback
 import logging
 import git
 from snakerlib.prompt_plus import PromptPlus
@@ -25,23 +28,40 @@ __AUTHOR__ = '黎慧剑'  # 作者
 __PUBLISH__ = '2018.07.05'  # 发布日期
 
 
-def prompt_comm_fun(message='', cmd='', cmd_para=''):
+def prompt_comm_fun(message='', cmd='', cmd_para='', with_returncode=False):
     """
     通用的命令交互执行函数，调用fcmm_git_cmd的命令执行处理
 
     @param {string} message='' - 命令行提示信息
     @param {string} cmd='' - 要执行的命令
     @param {string} cmd_para='' - 命令参数
+    @param {bool} with_returncode=False - 控制返回结果格式，是否带有returncode
+
+    @returns {string / list} - 分两种情况返回：
+        如果with_returncode是False，只返回显示结果字符串
+        如果with_returncode是True， 返回数组[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
     """
-    with ExceptionTools.ignored_all((), logging, '执行"%s %s"出现异常' % (cmd, cmd_para)):
+    back_obj = [0, '']
+    try:
         config_cmd_para = RunTools.get_global_var('config_cmd_para')
         if cmd in config_cmd_para.keys():
             # 执行FCMM命令
-            return FcmmGitCmd.main_cmd_fun(cmd=cmd, cmd_para=cmd_para) + '\n'
+            back_obj = FcmmGitCmd.main_cmd_fun(cmd=cmd, cmd_para=cmd_para)
         else:
             # 执行其他命令
-            subprocess.run(('%s %s' % (cmd, cmd_para)).rstrip(' '), shell=True)
-            return ''
+            res = subprocess.run(('%s %s' % (cmd, cmd_para)).rstrip(' '), shell=True)
+            back_obj = [res.returncode, '']
+    except Exception as e:
+        back_obj[0] = -1
+        back_obj[1] = 'execute "%s %s" error : \n%s' % (cmd, cmd_para, traceback.format_exc())
+
+    # 处理返回
+    if with_returncode:
+        return back_obj
+    else:
+        return back_obj[1]
 
 
 def load_fcmm_config():
@@ -80,7 +100,17 @@ def fcmm_init():
     """
     # 获取启动参数
     config = load_fcmm_config()
-    RunTools.set_global_var('config', config)
+
+    # 处理真实路径（在其他路径被调用的情况不会找错位置）
+    fcmm_path = os.path.split(os.path.realpath(inspect.getfile(inspect.currentframe())))[0]
+    temp_str = os.getcwd()
+    os.chdir(fcmm_path)
+    config['fcmm_path'] = fcmm_path
+    config['temp_path'] = os.path.realpath(config['temp_path'])
+    config['backup_path'] = os.path.realpath(config['backup_path'])
+    os.chdir(temp_str)
+
+    RunTools.set_global_var('config', config)  # 设置到全局变量中
 
     # 创建临时目录
     with ExceptionTools.ignored((FileExistsError)):
@@ -115,7 +145,10 @@ def fcmm_init():
     else:
         # 直接按参数执行
         cmd_para_str = ' '.join(sys.argv[2:])
-        prompt_comm_fun(message='', cmd=sys.argv[1], cmd_para=cmd_para_str)
+        back_obj = prompt_comm_fun(
+            message='', cmd=sys.argv[1], cmd_para=cmd_para_str, with_returncode=True)
+        print(back_obj[1])
+        exit(back_obj[0])
 
 
 if __name__ == '__main__':
@@ -125,7 +158,9 @@ if __name__ == '__main__':
 
     """
     # repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git')
-    repo = git.Repo(r'D:/dev/github/fcmm4git/test/temptest/init/fcmm4git-unittest')
+    repo = git.Repo(r'D:/dev/github/test')
+    # repo = git.Repo(r'D:/dev/github/fcmm4git/test/temptest/init/fcmm4git-unittest')
+    print(repo.is_dirty())
     print(repo.tags[0].name)
     print(type(repo.tags[0].commit))
     print(str(repo.tags[0].commit))

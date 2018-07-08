@@ -12,9 +12,10 @@ import tarfile
 import json
 import datetime
 import logging
+import traceback
 import subprocess
 from git import Repo
-from snakerlib.generic import ExceptionTools, RunTools, FileTools
+from snakerlib.generic import ExceptionTools, RunTools, FileTools, DebugTools
 
 
 __MOUDLE__ = 'fcmm_git_cmd'  # 模块名
@@ -39,23 +40,29 @@ class FcmmGitCmd(object):
         @param {string} cmd='' - 命令
         @param {string} cmd_para='' - 参数字符串
 
-        @returns {string} - 返回要显示的结果内容
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
         """
-        back_str = ''
+        back_obj = [0, '']
         # 通过switch字典实现switch的代码
         switch = {
             'cd': FcmmGitCmd.cmd_cd,
             'help': FcmmGitCmd.cmd_help,
             'init': FcmmGitCmd.cmd_init
         }
-        with ExceptionTools.ignored_all((), logging, '执行"%s %s"出现异常' % (cmd, cmd_para)):
+        try:
             dict_cmd_para = FcmmGitCmd.split_cmd_para(cmd_para)
             if 'h' in dict_cmd_para.keys() or 'help' in dict_cmd_para.keys():
                 # 只是返回帮助文档
-                FcmmGitCmd.cmd_help({"cmd": ""})
+                back_obj = FcmmGitCmd.cmd_help({"cmd": ""})
             else:
-                back_str = switch[cmd](dict_cmd_para)
-        return back_str
+                back_obj = switch[cmd](dict_cmd_para)
+        except Exception as e:
+            back_obj[0] = -1
+            back_obj[1] = 'execute "%s %s" error : \n%s' % (cmd, cmd_para, traceback.format_exc())
+
+        return back_obj
 
     #############################
     # 工具函数
@@ -212,11 +219,13 @@ class FcmmGitCmd(object):
 
         @param {string} cmd_str - 要执行的命令
 
-        @returns {bool} - 执行结果
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
         """
         print('execute sys cmd: %s' % (cmd_str))
         complete_info = subprocess.run(cmd_str, shell=True)
-        return (complete_info.returncode == 0)
+        return [complete_info.returncode, '']
 
     #############################
     # Git相关操作原子函数
@@ -257,58 +266,29 @@ class FcmmGitCmd(object):
         @param {string} rename=None - 本地目录重命名
         @param {bool} is_del_exit_dir=False - 如果本地目录已存在是否删除
 
-        @returns {bool} - 是否执行成功
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
         """
         repo_name = rename
         if repo_name is None:
             repo_name = FcmmGitCmd.get_remote_repo_name(url)
         full_path = os.path.realpath(path).rstrip('\\/') + '/'
         full_repo_path = full_path + repo_name
+
+        # FIXME({$AUTHOR$}): DebugTool不显示
+        DebugTools.debug_print(repo_name, full_path, full_repo_path)
+
         # 删除已存在的目录
         if os.path.exists(full_repo_path):
             if is_del_exit_dir:
                 FileTools.remove_dir(full_repo_path)
             else:
                 print('path is already exists: %s !' % (full_repo_path))
-                return False
+                return [1, '']
         # 克隆远程库
         os.chdir(full_path)  # 转到目录下
         return FcmmGitCmd.run_sys_cmd('git clone %s %s' % (url, repo_name))
-
-    @staticmethod
-    def backup_branch(repo_info=None, branch_name='*', bak_tag='', is_push_remote=False):
-        """
-        备份分支数据
-
-        @decorators staticmethod
-
-        @param {dict} repo_info=None - git仓库信息
-        @param {string} branch_name='*' - 要备份的分支名，如果传*代表备份全部分支
-        @param {string} bak_tag='' - 备份标识
-        @param {bool} is_push_remote=False - 是否推送到远程服务器上
-
-        @returns {bool} - 处理结果
-        """
-        result = True
-        if branch_name == '*':
-            # 备份所有分支
-            for branch_head in repo_info['repo'].branches:
-                result = FcmmGitCmd.backup_branch(repo_info, branch_head.name,
-                                                  bak_tag, is_push_remote)
-                if not result:
-                    return result
-        else:
-            # 备份指定分支
-            os.chdir(repo_info['work_dir'])
-            result = FcmmGitCmd.run_sys_cmd('git checkout %s' % (branch_name))
-            if not result:
-                return result
-            result = FcmmGitCmd.run_sys_cmd('git checkout -b %s%s' % (branch_name, bak_tag))
-            if is_push_remote and result:
-                # 推送到远程服务器
-                result = FcmmGitCmd.run_sys_cmd('push origin origin %s%s' % (branch_name, bak_tag))
-        # 完成处理，返回结果
-        return result
 
     #############################
     # 具体命令处理函数
@@ -323,14 +303,15 @@ class FcmmGitCmd(object):
 
         @param {dict} dict_cmd_para=None - 参数字典
 
-        @returns {string} - 返回处理显示内容
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
         """
         if len(dict_cmd_para) > 0:
             # 带参数，修改路径
             os.chdir(sorted(dict_cmd_para.keys())[0])
 
-        FcmmGitCmd.run_sys_cmd('cd')
-        return ''
+        return FcmmGitCmd.run_sys_cmd('cd')
 
     @staticmethod
     def cmd_help(dict_cmd_para=None):
@@ -341,15 +322,17 @@ class FcmmGitCmd(object):
 
         @param {dict} dict_cmd_para=None - 命令参数，取第一个显示帮助
 
-        @returns {string} - 返回帮助信息
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
         """
         config = RunTools.get_global_var('config')
         if len(dict_cmd_para) == 0:
             # 没有传入参数，返回全部命令的简要介绍
-            return config['help_text']['all']
+            return [0, config['help_text']['all']]
         else:
             # 返回指定命令的帮助信息
-            return config['help_text'][sorted(dict_cmd_para.keys())[0]]
+            return [0, config['help_text'][sorted(dict_cmd_para.keys())[0]]]
 
     @staticmethod
     def cmd_init(dict_cmd_para=None):
@@ -360,7 +343,9 @@ class FcmmGitCmd(object):
 
         @param {dict} dict_cmd_para=None - 参数字典
 
-        @returns {string} - 返回处理显示内容
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
         """
         # 判断是否有帮助
         if '-h' in dict_cmd_para.keys() or '-help' in dict_cmd_para.keys():
@@ -372,11 +357,11 @@ class FcmmGitCmd(object):
         # 最基础的参数校验
         url = FcmmGitCmd.get_cmd_para_value(dict_cmd_para, '-u', '-url')
         if url is None:
-            return FcmmGitCmd.get_must_has_para_tips(config, '-u', '-url')
+            return [1, FcmmGitCmd.get_must_has_para_tips(config, '-u', '-url')]
 
         base = FcmmGitCmd.get_cmd_para_value(dict_cmd_para, '-b', '-base')
         if base is None:
-            return FcmmGitCmd.get_must_has_para_tips(config, '-b', '-base')
+            return [1, FcmmGitCmd.get_must_has_para_tips(config, '-b', '-base')]
 
         # 常用信息获取
         repo_info = FcmmGitCmd.get_repo_info(os.getcwd())  # 获取git库原生信息有建库
@@ -390,11 +375,12 @@ class FcmmGitCmd(object):
         if base == 'local':
             if fcmm_config is not None:
                 # 已经除初始化过fcmm4git，不允许重复处理exit_fcmm_file
-                return config['i18n_tips']['exit_fcmm_file']
+                return [2, config['i18n_tips']['exit_fcmm_file']]
 
             # 需要将远程版本库下载下来比较处理
-            if not FcmmGitCmd.clone_remote_repo(url, config['temp_path'], None, True):
-                return config['i18n_tips']['execute_fail']
+            fun_res = FcmmGitCmd.clone_remote_repo(url, config['temp_path'], None, True)
+            if fun_res[0] != 0:
+                return [fun_res[0], config['i18n_tips']['execute_fail']]
 
             remote_repo_info = FcmmGitCmd.get_repo_info(
                 config['temp_path'].rstrip('\\/') + '/' + remote_name)
@@ -402,12 +388,12 @@ class FcmmGitCmd(object):
             if not ('-f' in dict_cmd_para.keys() or '-force' in dict_cmd_para.keys()):
                 # 没有强制标志，需要进行验证
                 if not remote_repo_info['repo'].bare:
-                    return config['i18n_tips']['remote_not_bare']
+                    return [3, config['i18n_tips']['remote_not_bare']]
         else:
             # 检查本地目录是否为空
             if not ('-f' in dict_cmd_para.keys() or '-force' in dict_cmd_para.keys()):
                 if os.listdir(repo_info['work_dir']):
-                    return config['i18n_tips']['local_not_bare']
+                    return [3, config['i18n_tips']['local_not_bare']]
 
         # 检查通过或强制执行
         if base == 'local':
@@ -416,25 +402,28 @@ class FcmmGitCmd(object):
                 FcmmGitCmd.backup_to_tar(
                     src_path=remote_repo_info['work_dir'],
                     save_path=config['backup_path'],
-                    save_name='%s.%s.tar' % (
+                    save_name='%s.bak.%s.tar' % (
                         remote_name, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
                 )
 
             # 如果不是git仓库，先初始化
             os.chdir(repo_info['work_dir'])
             if repo_info['repo'] is None:
-                if not FcmmGitCmd.run_sys_cmd('git init'):
-                    return config['i18n_tips']['execute_fail']
+                fun_res = FcmmGitCmd.run_sys_cmd('git init')
+                if fun_res[0] != 0:
+                    return [fun_res[0], config['i18n_tips']['execute_fail']]
                 repo_info = FcmmGitCmd.get_repo_info(repo_info['work_dir'])
             else:
                 # 如果原来有远程连接，解除连接
                 for remote_obj in repo_info['repo'].remotes:
-                    if not FcmmGitCmd.run_sys_cmd('git remote rm %s' % (remote_obj.name)):
-                        return config['i18n_tips']['execute_fail']
+                    fun_res = FcmmGitCmd.run_sys_cmd('git remote rm %s' % (remote_obj.name))
+                    if fun_res[0] != 0:
+                        return [fun_res[0], config['i18n_tips']['execute_fail']]
 
             # 绑定远程仓库
-            if not FcmmGitCmd.run_sys_cmd('git remote add origin %s' % (url)):
-                return config['i18n_tips']['execute_fail']
+            fun_res = FcmmGitCmd.run_sys_cmd('git remote add origin %s' % (url))
+            if fun_res[0] != 0:
+                return [fun_res[0], config['i18n_tips']['execute_fail']]
         else:
             # 远程为准，打包备份到指备份目录中
             if os.listdir(repo_info['work_dir']):
@@ -445,9 +434,10 @@ class FcmmGitCmd(object):
                         repo_name, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
                 )
             # 克隆到本地
-            if not FcmmGitCmd.clone_remote_repo(url,
-                                                repo_info['parent_dir'], repo_name, True):
-                return config['i18n_tips']['execute_fail']
+            fun_res = FcmmGitCmd.clone_remote_repo(url,
+                                                   repo_info['parent_dir'], repo_name, True)
+            if fun_res[0] != 0:
+                return [fun_res[0], config['i18n_tips']['execute_fail']]
 
         # 完成本地版本库的建立和更新，统一进行配置参数处理和服务器的推送
         FcmmGitCmd.run_sys_cmd('git checkout master')
@@ -461,27 +451,34 @@ class FcmmGitCmd(object):
                 fcmm_config['has_pkg'] = "True"
             FcmmGitCmd.save_to_json_file(fcmm_config_file, fcmm_config)
             # 提交修改
-            if not FcmmGitCmd.run_sys_cmd('git commit -a -m "add .fcmm4git by fcmm4git"'):
-                return config['i18n_tips']['execute_fail']
+            FcmmGitCmd.run_sys_cmd('git add *')
+            fun_res = FcmmGitCmd.run_sys_cmd('git commit -am "add .fcmm4git by fcmm4git"')
+            if fun_res[0] != 0:
+                return [fun_res[0], config['i18n_tips']['execute_fail']]
             # 设置版本信息
             ver = FcmmGitCmd.get_cmd_para_value(dict_cmd_para, '-v', '-version')
             if ver is not None:
-                if not FcmmGitCmd.run_sys_cmd('git tag -a %s -m "add version by fcmm4git"' % (ver)):
-                    return config['i18n_tips']['execute_fail']
+                fun_res = FcmmGitCmd.run_sys_cmd(
+                    'git tag -a %s -m "add version by fcmm4git"' % (ver))
+                if fun_res[0] != 0:
+                    return [fun_res[0], config['i18n_tips']['execute_fail']]
 
         # 推送到服务器端
-        if not FcmmGitCmd.run_sys_cmd('git push origin master --tags'):
-            return config['i18n_tips']['execute_fail']
+        fun_res = FcmmGitCmd.run_sys_cmd('git push -f --follow-tags origin master')
+        if fun_res[0] != 0:
+            return [fun_res[0], config['i18n_tips']['execute_fail']]
         # 添加版本分支
-        if '-n' in dict_cmd_para.keys() or '-nopkg' in dict_cmd_para.keys():
-            if not FcmmGitCmd.run_sys_cmd('git checkout -b lb-pkg'):
-                return config['i18n_tips']['execute_fail']
-            if not FcmmGitCmd.run_sys_cmd('git push origin lb-pkg --tags'):
-                return config['i18n_tips']['execute_fail']
+        if not ('-n' in dict_cmd_para.keys() or '-nopkg' in dict_cmd_para.keys()):
+            fun_res = FcmmGitCmd.run_sys_cmd('git checkout -b lb-pkg')
+            if fun_res[0] != 0:
+                return [fun_res[0], config['i18n_tips']['execute_fail']]
+            fun_res = FcmmGitCmd.run_sys_cmd('git push -f --follow-tags origin lb-pkg')
+            if fun_res[0] != 0:
+                return [fun_res[0], config['i18n_tips']['execute_fail']]
             FcmmGitCmd.run_sys_cmd('git checkout master')
 
         # 返回执行成功
-        return config['i18n_tips']['execute_success']
+        return [0, config['i18n_tips']['execute_success']]
 
 
 if __name__ == '__main__':
