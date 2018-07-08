@@ -40,25 +40,16 @@ class TestFcmm(unittest.TestCase):
         """
         global TEST_PATH
         if os.path.exists(TEST_PATH):
-            if platform.system() == 'Windows':
-                subprocess.run('rmdir /S /Q %s' % (TEST_PATH), shell=True)
-            else:
-                FileTools.remove_dir(TEST_PATH)
+            FileTools.remove_dir(TEST_PATH)
 
         FileTools.create_dir(TEST_PATH)
 
         # 删除临时和备份目录
         if os.path.exists(TEMP_PATH):
-            if platform.system() == 'Windows':
-                subprocess.run('rmdir /S /Q %s' % (TEMP_PATH.replace('/', '\\')), shell=True)
-            else:
-                FileTools.remove_dir(TEMP_PATH)
+            FileTools.remove_dir(TEMP_PATH)
 
         if os.path.exists(BACKUP_PATH):
-            if platform.system() == 'Windows':
-                subprocess.run('rmdir /S /Q %s' % (BACKUP_PATH.replace('/', '\\')), shell=True)
-            else:
-                FileTools.remove_dir(BACKUP_PATH)
+            FileTools.remove_dir(BACKUP_PATH)
 
         return
 
@@ -107,12 +98,7 @@ class TestFcmm(unittest.TestCase):
             )
 
         os.chdir(root_dir)
-        if platform.system() == 'Windows':
-            self.assertTrue(
-                subprocess.run('rmdir /S /Q %s' % (repo_dir.replace('/', '\\')), shell=True)
-            )
-        else:
-            FileTools.remove_dir(repo_dir)
+        FileTools.remove_dir(repo_dir)
 
         # 测试本地目录上传服务器
         print('测试本地目录上传服务器')
@@ -120,10 +106,41 @@ class TestFcmm(unittest.TestCase):
         local_repo_path = root_dir + local_repo_name + '/'
         FileTools.create_dir(local_repo_path)
         os.chdir(local_repo_path)
-        subprocess.run('echo "测试本地目录上传服务器" > readme.md', shell=True)
+        subprocess.run('echo "test local to remote: no pkg v0.1.2" > readme.md', shell=True)
+
+        print('测试本地目录上传服务器，成功但不建立lb-pkg')
         self.assertTrue(
             subprocess.run(
-                'python %s/fcmm.py init -b local -url %s -v v0.1.1 -force' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
+                'python %s/fcmm.py init -b local -url %s -v v0.1.2 -force -n' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
+            '本地目录上传: init命令处理失败'
+        )
+        # 检查处理情况，先是备份
+        file_list = FileTools.get_filelist(path=BACKUP_PATH,
+                                           regex_str=test_repo_name.replace('.', '\.')+'\.bak\..*\.tar')
+        self.assertTrue(len(file_list) > 0, '本地目录上传: 备份文件不存在')
+        # 分支信息
+        repo_info = fcmm_git_cmd.FcmmGitCmd.get_repo_info(local_repo_path)
+        has_pkg = False
+        for branch in repo_info['repo'].branches:
+            if branch.name == 'lb-pkg':
+                has_pkg = True
+                break
+        self.assertFalse(has_pkg, '本地目录上传: 不应建立lb-pkg')
+
+        print('测试本地目录上传服务器，非强制被拒绝')
+        self.assertFalse(
+            subprocess.run(
+                'python %s/fcmm.py init -b local -url %s -v v0.0.9' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
+            '本地目录上传: init命令处理失败'
+        )
+
+        print('测试本地目录上传服务器，成功并建立lb-pkg')
+        subprocess.run('echo "test local to remote: with pkg v0.0.9" > readme1.md', shell=True)
+        FileTools.remove_file(local_repo_path + '.fcmm4git')
+        FileTools.remove_file(local_repo_path + 'readme.md')
+        self.assertTrue(
+            subprocess.run(
+                'python %s/fcmm.py init -b local -url %s -v v0.0.9 -force' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
             '本地目录上传: init命令处理失败'
         )
         # 检查处理情况，先是备份

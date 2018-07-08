@@ -20,6 +20,7 @@
                     "remote"
                 ],
                 "force": [],
+                "reset": [],
                 "url": [],
                 "version": [],
                 "nopkg": [],
@@ -29,6 +30,7 @@
                     "remote"
                 ],
                 "f": [],
+                "r": [],
                 "u": [],
                 "v": [],
                 "n": []
@@ -58,8 +60,11 @@
     },
     "i18n_tips": {
         "execute_success": "命令执行成功",
+        "just_clone_remote": "远程版本库装载fcmm4git，只克隆不重新设置",
         "execute_fail": "命令执行失败",
         "must_has_para": "必须包括参数'%s'",
+        "version_no_value": "-version / -v 版本参数必须带参数值",
+        "remote_tag_exists": "远程版本库的版本号（version）已存在",
         "exit_fcmm_file": "该版本库已装载fcmm4git，不能重新初始化，如需重新初始化请删除'.fcmm4git'文件",
         "remote_not_bare": "远程版本库非空，如果需要强制处理请使用'-force' 或 '-f'参数.",
         "local_not_bare": "本地目录非空，如果需要强制处理请使用'-force' 或 '-f'参数.",
