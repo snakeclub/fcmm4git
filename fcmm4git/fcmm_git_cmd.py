@@ -8,6 +8,7 @@ FCMM针对Git的命令处理
 """
 
 import os
+import shutil
 import tarfile
 import json
 import datetime
@@ -393,6 +394,8 @@ class FcmmGitCmd(object):
         fcmm_config = FcmmGitCmd.get_fcmm_repo_config(repo_info['work_dir'])
         remote_name = FcmmGitCmd.get_remote_repo_name(url)  # 远程仓库命名
         remote_repo_info = None
+        remote_has_pkg = False
+        remote_has_tag = False
 
         # 进行是否可处理的校验
         if base == 'local':
@@ -411,13 +414,22 @@ class FcmmGitCmd(object):
             return [fun_res[0], config['i18n_tips']['execute_fail']]
         remote_repo_info = FcmmGitCmd.get_repo_info(
             config['temp_path'].rstrip('\\/') + '/' + remote_name)
+        # 尝试找远程的版本分支
+        os.chdir(remote_repo_info['work_dir'])
+        FcmmGitCmd.run_sys_cmd('git checkout --track origin/lb-pkg')
+        for branch in remote_repo_info['repo'].branches:
+            if branch.name == 'lb-pkg':
+                remote_has_pkg = True
+                break
+        if ver is not None and FcmmGitCmd.check_tag_exists(remote_repo_info['repo'], ver):
+            remote_has_tag = True
 
         if not ('-f' in dict_cmd_para.keys() or '-force' in dict_cmd_para.keys()):
             # 没有强制标志，需要进行验证
             if base == 'local':
                 if not remote_repo_info['repo'].bare:
                     return [3, config['i18n_tips']['remote_not_bare']]
-            if ver is not None and FcmmGitCmd.check_tag_exists(remote_repo_info['repo'], ver):
+            if remote_has_tag:
                 # 检查版本号是否已存在
                 return [3, config['i18n_tips']['remote_tag_exists']]
 
@@ -456,9 +468,21 @@ class FcmmGitCmd(object):
 
                 # 指定强制更新服务器端
                 is_force_reset = True
+                remote_has_tag = False
             else:
                 # 保留服务器端版本信息，用文件清除方式实现文件替换
-
+                # 1：删除临时目录中远程分支的所有文件
+                os.chdir(remote_repo_info['work_dir'])
+                FcmmGitCmd.run_sys_cmd('git checkout master')
+                fun_res = FcmmGitCmd.run_sys_cmd('git rm * -r')
+                if fun_res[0] != 0:
+                    return [fun_res[0], config['i18n_tips']['execute_fail']]
+                # 2: 将本地目录中的文件复制到远程目录，删除本地目录，复制远程目录到本地目录
+                FileTools.copy_all_with_path(
+                    repo_info['work_dir'], remote_repo_info['work_dir'], '^(?!\\.git$)')
+                FileTools.remove_all_with_path(repo_info['work_dir'])
+                FileTools.copy_all_with_path(remote_repo_info['work_dir'], repo_info['work_dir'])
+                os.chdir(repo_info['work_dir'])
         else:
             # 远程为准，打包备份到指备份目录中
             if os.listdir(repo_info['work_dir']):
@@ -468,11 +492,11 @@ class FcmmGitCmd(object):
                     save_name='%s.%s.tar' % (
                         repo_name, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
                 )
-            # 克隆到本地
-            fun_res = FcmmGitCmd.clone_remote_repo(url,
-                                                   repo_info['parent_dir'], repo_name, True)
-            if fun_res[0] != 0:
-                return [fun_res[0], config['i18n_tips']['execute_fail']]
+            # 复制远程目录到本地目录
+            os.chdir(remote_repo_info['work_dir'])
+            FileTools.remove_all_with_path(repo_info['work_dir'])
+            FileTools.copy_all_with_path(remote_repo_info['work_dir'], repo_info['work_dir'])
+            os.chdir(repo_info['work_dir'])
 
         # 完成本地版本库的建立和更新，统一进行配置参数处理和服务器的推送
         FcmmGitCmd.run_sys_cmd('git checkout master')
@@ -493,6 +517,13 @@ class FcmmGitCmd(object):
             # 设置版本信息
             ver = FcmmGitCmd.get_cmd_para_value(dict_cmd_para, '-v', '-version')
             if ver is not None:
+                if remote_has_tag:
+                    # 远程服务器已经有标签，应先删除标签，再新建
+                    fun_res = FcmmGitCmd.run_sys_cmd(
+                        'git tag -d %s' % (ver))
+                    if fun_res[0] != 0:
+                        return [fun_res[0], config['i18n_tips']['execute_fail']]
+
                 fun_res = FcmmGitCmd.run_sys_cmd(
                     'git tag -a %s -m "add version by fcmm4git"' % (ver))
                 if fun_res[0] != 0:
@@ -511,6 +542,13 @@ class FcmmGitCmd(object):
             return [fun_res[0], config['i18n_tips']['execute_fail']]
         # 添加版本分支
         if not ('-n' in dict_cmd_para.keys() or '-nopkg' in dict_cmd_para.keys()):
+            if remote_has_pkg:
+                # 远程仓库已有版本分支，要删除并强制推送
+                fun_res = FcmmGitCmd.run_sys_cmd('git branch -d lb-pkg')
+                if fun_res[0] != 0:
+                    return [fun_res[0], config['i18n_tips']['execute_fail']]
+                push_force_tag = '-f '  # 指定强制推送
+
             fun_res = FcmmGitCmd.run_sys_cmd('git checkout -b lb-pkg')
             if fun_res[0] != 0:
                 return [fun_res[0], config['i18n_tips']['execute_fail']]
