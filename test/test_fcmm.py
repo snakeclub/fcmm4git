@@ -111,7 +111,7 @@ class TestFcmm(unittest.TestCase):
         print('测试本地目录上传服务器，成功但不建立lb-pkg')
         self.assertTrue(
             subprocess.run(
-                'python %s/fcmm.py init -b local -url %s -v v0.1.2 -force -n' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
+                'python %s/fcmm.py init -b local -url %s -v v0.1.2 -force -n -r' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
             '本地目录上传: init命令处理失败'
         )
         # 检查处理情况，先是备份
@@ -155,6 +155,18 @@ class TestFcmm(unittest.TestCase):
                 has_pkg = True
                 break
         self.assertTrue(has_pkg, '本地目录上传: 没有成功建立lb-pkg')
+
+        print('测试从服务器下载并建立本地目录，远程已带有fcmm4git')
+        local_repo_name = 'remote1'
+        local_repo_path = root_dir + local_repo_name + '/'
+        FileTools.create_dir(local_repo_path)
+        os.chdir(local_repo_path)
+        subprocess.run('echo "test remote to local: no pkg v0.1.3" > readme.md', shell=True)
+        self.assertTrue(
+            subprocess.run(
+                'python %s/fcmm.py init -b remote -url %s -v v0.1.3 -force -n' % (FCMM_PATH, TEST_REPO_URL), shell=True).returncode == 0,
+            '服务器下载并建立本地目录: init命令处理失败'
+        )
 
 
 if __name__ == '__main__':

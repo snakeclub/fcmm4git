@@ -474,9 +474,8 @@ class FcmmGitCmd(object):
                 # 1：删除临时目录中远程分支的所有文件
                 os.chdir(remote_repo_info['work_dir'])
                 FcmmGitCmd.run_sys_cmd('git checkout master')
-                fun_res = FcmmGitCmd.run_sys_cmd('git rm * -r')
-                if fun_res[0] != 0:
-                    return [fun_res[0], config['i18n_tips']['execute_fail']]
+                FcmmGitCmd.run_sys_cmd('git rm * -r')
+
                 # 2: 将本地目录中的文件复制到远程目录，删除本地目录，复制远程目录到本地目录
                 FileTools.copy_all_with_path(
                     repo_info['work_dir'], remote_repo_info['work_dir'], '^(?!\\.git$)')
@@ -560,6 +559,35 @@ class FcmmGitCmd(object):
 
         # 返回执行成功
         return [0, config['i18n_tips']['execute_success']]
+
+    @staticmethod
+    def cmd_add_pkg(dict_cmd_para=None):
+        """
+        新增FCMM的pkg分支，如果原分支存在，可以重置分支
+
+        @decorators staticmethod
+
+        @param {dict} dict_cmd_para=None - 参数字典
+
+        @returns {list} - 执行结果[returncode, msgstring]
+            returncode - 0代表成功，其他代表失败
+            msgstring - 要返回显示的内容
+        """
+        # 判断是否有帮助
+        if '-h' in dict_cmd_para.keys() or '-help' in dict_cmd_para.keys():
+            return FcmmGitCmd.cmd_help({'add-pkg': ''})
+
+        # 需要获取的参数
+        config = RunTools.get_global_var('config')
+
+        # 最基础的参数校验
+        base = FcmmGitCmd.get_cmd_para_value(dict_cmd_para, '-b', '-base')
+        if base is None:
+            return [1, FcmmGitCmd.get_must_has_para_tips(config, '-b', '-base')]
+
+        ver = FcmmGitCmd.get_cmd_para_value(dict_cmd_para, '-v', '-version')
+        if ver is not None and ver == '':
+            return [1, config['i18n_tips']['version_no_value']]
 
 
 if __name__ == '__main__':
