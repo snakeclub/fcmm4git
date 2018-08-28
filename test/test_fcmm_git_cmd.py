@@ -4,8 +4,11 @@
 import unittest
 import sys
 import os
+import shutil
 sys.path.append('../fcmm4git/')
-import fcmm_git_cmd
+import fcmm
+from fcmm_git_tools import FCMMGitTools
+from fcmm_tools import FCMMTools
 from snakerlib.generic import FileTools
 
 
@@ -29,17 +32,24 @@ class TestFcmmGitCmd(unittest.TestCase):
         """
         启动测试执行的初始化
         """
+        self.current_path = os.path.realpath('')
         if os.path.exists(TEST_PATH):
             FileTools.remove_dir(TEST_PATH)
 
         FileTools.create_dir(TEST_PATH)
+
+        shutil.copyfile('../fcmm4git/fcmm.json', 'fcmm.json')
+
+        fcmm.fcmm_init()
         return
 
     def tearDown(self):
         """
         结束测试执行的销毁
         """
+        os.chdir(self.current_path)
         FileTools.remove_dir(TEST_PATH)
+        FileTools.remove_file('fcmm.json')
         return
 
     def test_json_file(self):
@@ -55,8 +65,8 @@ class TestFcmmGitCmd(unittest.TestCase):
         json_obj['key_3']['key_3_2'] = 'value3_2'
         json_obj['key_4'] = ['value4_1', 'value4_2']
 
-        fcmm_git_cmd.FcmmGitCmd.save_to_json_file(TEST_PATH + 'json_file/.fcmm4git', json_obj)
-        get_json_obj = fcmm_git_cmd.FcmmGitCmd.get_fcmm_repo_config(TEST_PATH + 'json_file/')
+        FCMMTools.save_to_json_file(TEST_PATH + 'json_file/.fcmm4git', json_obj)
+        get_json_obj = FCMMTools.get_fcmm_config(TEST_PATH + 'json_file/')
 
         self.assertDictEqual(json_obj, get_json_obj, 'JSON文件处理失败')
         return
@@ -73,7 +83,7 @@ class TestFcmmGitCmd(unittest.TestCase):
             'd1': '',
             '-c2': ''
         }
-        real_obj = fcmm_git_cmd.FcmmGitCmd.split_cmd_para(cmd_para)
+        real_obj = FCMMTools.split_cmd_para(cmd_para)
         self.assertDictEqual(want_obj, real_obj, 'split_cmd_para失败')
         return
 
@@ -82,8 +92,51 @@ class TestFcmmGitCmd(unittest.TestCase):
         get_remote_repo_name
         """
         url = 'https://github.com/snakeclub/fcmm4git-unittest.git'
-        name = fcmm_git_cmd.FcmmGitCmd.get_remote_repo_name(url)
+        name = FCMMGitTools.get_remote_repo_name(url)
         self.assertEqual(name, 'fcmm4git-unittest', 'get_remote_repo_name')
+
+    def test_vailidate_cmd_para(self):
+        """
+        vailidate_cmd_para
+        """
+        print('测试vailidate_cmd_para')
+        dict_cmd_para = {
+        }
+        ret = FCMMTools.vailidate_cmd_para(dict_cmd_para, cmd='init')
+        print('测试必须带指定参数：' + ret[1])
+        self.assertTrue(ret[0] == 1, '测试必须带指定参数失败：%s' % ('init'))
+        dict_cmd_para = {
+            '-f': '',
+            '-err2': 'value1',
+            '-err1': 'value2',
+            '-b': 'remote',
+            '-u': 'ddd'
+        }
+        ret = FCMMTools.vailidate_cmd_para(dict_cmd_para, cmd='init')
+        print('测试不支持的参数:' + ret[1])
+        self.assertTrue(ret[0] == 1, '测试不支持的参数失败：%s' % ('-err2'))
+        dict_cmd_para = {
+            '-b': 'testb'
+        }
+        ret = FCMMTools.vailidate_cmd_para(dict_cmd_para, cmd='init')
+        print('测试参数取值错误:' + ret[1])
+        self.assertTrue(ret[0] == 1, '测试参数取值错误失败：%s' % ('-testb'))
+        dict_cmd_para = {
+            '-b': 'remote',
+            '-v': '',
+            '-u': 'ddd'
+        }
+        ret = FCMMTools.vailidate_cmd_para(dict_cmd_para, cmd='init')
+        print('测试参数未送值错误:' + ret[1])
+        self.assertTrue(ret[0] == 1, '测试参数未送值错误失败：%s' % ('-v'))
+        dict_cmd_para = {
+            '-b': 'remote',
+            '-u': 'ddd',
+            '-v': 'V1.1'
+        }
+        ret = FCMMTools.vailidate_cmd_para(dict_cmd_para, cmd='init')
+        print('测试参数校验通过:' + ret[1])
+        self.assertTrue(ret[0] == 0, '测试参数校验通过失败：%s' % ('-v'))
 
 
 if __name__ == '__main__':

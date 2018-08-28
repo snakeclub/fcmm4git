@@ -14,61 +14,170 @@
         "init": {
             "deal_fun": "",
             "long_para": {
-                "help": [],
+                "help": "None",
                 "base": [
                     "local",
                     "remote"
                 ],
-                "force": [],
-                "reset": [],
+                "force": "None",
+                "reset": "None",
                 "url": [],
                 "version": [],
-                "nopkg": [],
-                "h": [],
+                "nopkg": "None",
+                "h": "None",
                 "b": [
                     "local",
                     "remote"
                 ],
-                "f": [],
-                "r": [],
+                "f": "None",
+                "r": "None",
                 "u": [],
                 "v": [],
-                "n": []
+                "n": "None"
             }
         },
         "add-pkg": {
             "deal_fun": "",
             "long_para": {
-                "help": [],
-                "base": [
-                    "local",
-                    "remote"
-                ],
+                "help": "None",
                 "version": [],
-                "force": [],
-                "h": [],
-                "b": [],
+                "force": "None",
+                "h": "None",
                 "v": [],
-                "f": []
+                "f": "None"
+            }
+        },
+        "add-dev": {
+            "deal_fun": "",
+            "long_para": {
+                "help": "None",
+                "name": [],
+                "type": [
+                    "req",
+                    "fix",
+                    "feat"
+                ],
+                "clone": [],
+                "version": [],
+                "tag": [],
+                "force": "None",
+                "h": "None",
+                "n": [],
+                "t": [
+                    "req",
+                    "fix",
+                    "feat"
+                ],
+                "c": [],
+                "v": [],
+                "f": "None"
+            }
+        },
+        "add-temp": {
+            "deal_fun": "",
+            "long_para": {
+                "help": "None",
+                "name": [],
+                "bare": "None",
+                "force": "None",
+                "h": "None",
+                "n": [],
+                "b": "None",
+                "f": "None"
+            }
+        },
+        "rollback": {
+            "deal_fun": "",
+            "long_para": {
+                "help": "None",
+                "name": [],
+                "version": [],
+                "tag": [],
+                "force": "None",
+                "h": "None",
+                "n": [],
+                "t": [],
+                "v": [],
+                "f": "None"
+            }
+        },
+        "check": {
+            "deal_fun": "",
+            "long_para": {
+                "help": "None",
+                "name": [],
+                "source": [],
+                "version": [],
+                "tag": [],
+                "h": "None",
+                "n": [],
+                "s": [],
+                "t": [],
+                "v": []
             }
         }
+    },
+    "cmd_para_must": {
+        "init": [
+            [
+                "base",
+                "b"
+            ],
+            [
+                "url",
+                "u"
+            ]
+        ],
+        "add-dev": [
+            [
+                "name",
+                "n"
+            ],
+            [
+                "type",
+                "t"
+            ]
+        ],
+        "add-temp": [
+            [
+                "name",
+                "n"
+            ]
+        ]
     },
     "help_text": {
         "all": "FCMM4Git支持的命令如下：\n  help - 获取命令帮助\n  init - 根据指定的参数建立及初始化FCMM版本库",
         "help": "说明：获取命令帮助信息\n外部命令：fcmm help [命令]\n内部命令：init [命令]",
         "init": "说明：根据指定的参数建立及初始化FCMM版本库\n外部命令：fcmm init [参数……]\n内部命令：init [参数……]\n参数定义（有长参数和短参数两种形式）：\n  -help / -h : 获取命令帮助信息\n  -base / -b : 参数值local/remote，指定初始化的原始版本基于本地还是远程，无论基于本地还是远程，都会判断另一端是否有版本或文件的存在，如果有则报错不处理\n  -force / -f ：指定是否强制初始化，如果指定强制初始化，另一端的文件和版本会被清除覆盖掉，因此force参数要慎用\n  -reset / -r :  仅针对local模式，指定是否重置服务器端的历史，如果指定该参数，将会使用本地的git信息覆盖服务器；不指定参数会删除远端服务器的所有文件，并使用本地文件重置\n  -url / -u : 指定远程git服务的url，例如“https://github.com/snakeclub/fcmm4git.git”\n  -version / -v : 指定当前版本库的版本，例如“v1.0.1”或“d20180620-1”\n  -nopkg / -n : 指定不建立lb-pkg分支，不指定该参数则会建立该分支\n",
-        "add-pkg": "说明：新增FCMM的pkg分支，如果原分支存在，可以重置分支\n外部命令：fcmm add-pkg [参数……]\n内部命令：add-pkg [参数……]\n参数定义（有长参数和短参数两种形式）根据：\n  -help / -h : 获取命令帮助信息\n  -version / -v : 指定新增分支获取的master版本库的版本，如果不设置默认取master最新的版本\n  -base / -b : 参数值local/remote，指定从本地还是远程的master库获取，默认是远程，如果取本地需通过force参数才能生效\n  -force / -f ：指定强制创建，如不指定，当分支已存在不会执行处理\n"
+        "add-pkg": "说明：新增FCMM的pkg分支，如果原分支存在，可以重置分支\n外部命令：fcmm add-pkg [参数……]\n内部命令：add-pkg [参数……]\n参数定义（有长参数和短参数两种形式）根据：\n  -help / -h : 获取命令帮助信息\n  -version / -v : 指定新增分支获取的master版本库的版本，如果不设置默认取master最新的版本\n  -force / -f ：指定强制创建，如不指定，当分支已存在不会执行处理\n",
+        "add-dev": "说明：新增FCMM的开发分支，如果原分支存在，可以重置分支\n外部命令：fcmm add-dev [参数……]\n内部命令：add-dev [参数……]\n参数定义（有长参数和短参数两种形式）根据：\n  -help / -h : 获取命令帮助信息\n  -name / -n : 要创建的开发分支的标识名，例如xq2018063701\n  -type / -t : 指定要创建的分支类型，参数值为req/fix/feat\n  -clone / -c : 从其他开发分支复制，参数值为其他开发分支的\"类型-标识名\"，例如req-xq2018063701\n  -version / -v : 指从master/lb-pkg的指定版本重新创建（忽略-clone参数 ）\n  -tag :  获取的是指定的commit标签的版本\n  -force / -f ：指定强制创建，如不指定，当分支已存在不会执行处理\n",
+        "add-temp": "说明：新增FCMM的开发者分支，如果原分支存在，可以重置分支\n外部命令：fcmm add-temp [参数……]\n内部命令：add-temp [参数……]\n参数定义（有长参数和短参数两种形式）根据：\n  -help / -h : 获取命令帮助信息\n  -name / -n : 开发者名称，如果不设置则默认从git config中获取\n  -bare / -b : 标识要创建的分支是空白分支，如果不指定该参数，将基于本地仓库的当前版本创建\n  -force / -f ：指定强制创建，如不指定，当分支已存在不会执行处理\n",
+        "rollback": "说明：将指定分支回退到指定版本\n外部命令：fcmm rollback [参数……]\n内部命令：rollback [参数……]\n参数定义（有长参数和短参数两种形式）根据：\n  -help / -h : 获取命令帮助信息\n  -name / -n : 分支完整标识，例如master，lb-pkg；如果不传入代表回退当前工作分支\n  -version / -v : 要回退到的版本号\n  -tag / -t :  要回退到的commit标签的版本，该参数与version 参数互斥\n  -force / -f ：指定强制提交，如不指定，master和定版分支不允许回退\n",
+        "check": "说明：检查分支的基础版本与指定分支是否一致（比较版本在检查分支的历史节点里）\n外部命令：fcmm check [参数……]\n内部命令：check [参数……]\n参数定义（有长参数和短参数两种形式）根据：\n  -help / -h : 获取命令帮助信息\n  -name / -n : 检查分支完整标识，例如master，lb-pkg；如果不传入代表当前工作分支\n  -source / -s : 指定要比较分支的完整标识，例如master，lb-pkg；如果不传入代表master，lb-pkg分支\n  -version / -v : 要比较分支的指定版本号；与tag参数互斥\n  -tag / -t :  要比较分支的指定commit标签，该参数与version 参数互斥，如果不指定，则为分支的最新提交\n"
     },
     "i18n_tips": {
         "execute_success": "命令执行成功",
         "just_clone_remote": "远程版本库装载fcmm4git，只克隆不重新设置",
         "execute_fail": "命令执行失败",
         "must_has_para": "必须包括参数'%s'",
+        "para_not_support": "不支持'%s'参数",
+        "para_must_has_value": "参数'%s'必须有值",
+        "para_value_not_support": "不支持参数'%s'的取值'%s'",
         "version_no_value": "-version / -v 版本参数必须带参数值",
         "remote_tag_exists": "远程版本库的版本号（version）已存在",
         "exit_fcmm_file": "该版本库已装载fcmm4git，不能重新初始化，如需重新初始化请删除'.fcmm4git'文件",
         "remote_not_bare": "远程版本库非空，如果需要强制处理请使用'-force' 或 '-f'参数.",
         "local_not_bare": "本地目录非空，如果需要强制处理请使用'-force' 或 '-f'参数.",
-        "remote_backup_fail": "远程仓库备份失败！"
+        "remote_backup_fail": "远程仓库备份失败！",
+        "local_git_error": "本地仓库信息有误（非GIT节点或无.fcmm4git文件）",
+        "branch_has_exists": "分支'%s'已存在",
+        "branch_not_exists": "分支'%s'不存在",
+        "tag_not_exists": "版本号（version）'%s'不存在",
+        "commit_not_exists": "commit标签（tag）'%s'不存在",
+        "master_pkg_no_rollback": "master和lb-pkg分支不允许回退，如果需要强制处理请使用'-force' 或 '-f'参数.",
+        "check_branch_is_same": "检查分支'%s'与比较分支是同一个",
+        "branch_check_pass": "分支版本检查通过",
+        "branch_check_failed": "分支版本检查不通过",
+        "current_branch_is_dirty": "当前分支存在未提交内容"
     }
 }

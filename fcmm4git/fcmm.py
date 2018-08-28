@@ -14,11 +14,10 @@ import sys
 import os
 import copy
 import traceback
-import logging
-import git
+from snakerlib.generic import FileTools, ExceptionTools, RunTools
 from snakerlib.prompt_plus import PromptPlus
-from snakerlib.generic import FileTools, ExceptionTools, StringTools, RunTools
-from fcmm_git_cmd import FcmmGitCmd
+from fcmm_git_cmd import FCMMGitCmd
+import git
 
 
 __MOUDLE__ = 'fcmm'  # 模块名
@@ -48,7 +47,7 @@ def prompt_comm_fun(message='', cmd='', cmd_para='', with_returncode=False):
         config_cmd_para = RunTools.get_global_var('config_cmd_para')
         if cmd in config_cmd_para.keys():
             # 执行FCMM命令
-            back_obj = FcmmGitCmd.main_cmd_fun(cmd=cmd, cmd_para=cmd_para)
+            back_obj = FCMMGitCmd.main_cmd_fun(cmd=cmd, cmd_para=cmd_para)
         else:
             # 执行其他命令
             res = subprocess.run(('%s %s' % (cmd, cmd_para)).rstrip(' '), shell=True)
@@ -90,6 +89,10 @@ def cmd_para_init(config):
                 cmd_para[_key][_para] = prompt_comm_fun
             elif cmd_para[_key][_para] == 'None':
                 cmd_para[_key][_para] = None
+            elif _para == 'long_para':
+                for _sub_para in cmd_para[_key][_para].keys():
+                    if cmd_para[_key][_para][_sub_para] == 'None':
+                        cmd_para[_key][_para][_sub_para] = None
 
     return cmd_para
 
@@ -127,6 +130,16 @@ def fcmm_init():
     config_cmd_para = cmd_para_init(config)
     RunTools.set_global_var('config_cmd_para', config_cmd_para)
 
+
+def fcmm_run():
+    """
+    启动fcmm4git
+    """
+    fcmm_init()
+
+    config = RunTools.get_global_var('config')
+    config_cmd_para = RunTools.get_global_var('config_cmd_para')
+
     # 处理命令行参数
     argv_count = len(sys.argv)
     if argv_count == 1:
@@ -154,12 +167,16 @@ def fcmm_init():
 if __name__ == '__main__':
     # 当程序自己独立运行时执行的操作
     # 初始化命令行并启动
-    fcmm_init()
+    # fcmm_run()
+
+    # repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git')
+    # repo = git.Repo(r'D:/dev/github/test')
+    repo = git.Repo(r'C:\Users\hi.li\Desktop\opensource\fcmm4git')
+    # repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git-unittest')
+    print(repo.branches[0].name)
+    print(repo.branches[0].commit.tree[1])
 
     """
-    # repo = git.Repo(r'C:/Users/hi.li/Desktop/opensource/fcmm4git')
-    repo = git.Repo(r'D:/dev/github/test')
-    # repo = git.Repo(r'D:/dev/github/fcmm4git/test/temptest/init/fcmm4git-unittest')
     print(repo.is_dirty())
     print(repo.tags[0].name)
     print(type(repo.tags[0].commit))
@@ -168,6 +185,8 @@ if __name__ == '__main__':
     print(repo.branches[0].commit)
     print(repo.remotes[0].name)
     print(repo.remotes[0].url)
+    print(repo.active_branch.name)
+    print(repo.config)
     """
 
     """
